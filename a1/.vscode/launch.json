@@ -1,0 +1,42 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Launch RUStoreServer",
+            "request": "launch",
+            "mainClass": "com.RUStore.RUStoreServer",
+            "projectName": "RUStore"
+        },
+        {
+            "type": "java",
+            "name": "Launch TestSample",
+            "request": "launch",
+            "mainClass": "com.RUStore.TestSample",
+            "projectName": "RUStore"
+        },
+        {
+            "type": "java",
+            "name": "Launch TestSandbox",
+            "request": "launch",
+            "mainClass": "com.RUStore.TestSandbox",
+            "projectName": "RUStore"
+        },
+        {
+            "type": "java",
+            "name": "Launch TestStringCLI",
+            "request": "launch",
+            "mainClass": "com.RUStore.TestStringCLI",
+            "projectName": "RUStore"
+        }
+    ]
+}
