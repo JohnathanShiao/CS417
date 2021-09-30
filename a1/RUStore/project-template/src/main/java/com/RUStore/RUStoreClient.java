@@ -3,7 +3,6 @@ package com.RUStore;
 /* any necessary Java packages here */
 import java.net.*;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.io.*;
 
 public class RUStoreClient {
@@ -12,8 +11,8 @@ public class RUStoreClient {
 	private String ip;
 	private int port_num;
 	private Socket clientSocket;
-	private PrintWriter out;
-	private BufferedReader in;
+	private DataOutputStream out;
+	private DataInputStream in;
 	/**
 	 * RUStoreClient Constructor, initializes default values
 	 * for class members
@@ -37,8 +36,8 @@ public class RUStoreClient {
 
 		// Implement here
 		clientSocket = new Socket(ip,port_num);
-		out = new PrintWriter(clientSocket.getOutputStream(), true);
-		in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));	
+		out = new DataOutputStream(clientSocket.getOutputStream());
+		in = new DataInputStream(clientSocket.getInputStream());	
 	}
 
 	/**
@@ -58,20 +57,22 @@ public class RUStoreClient {
 		// Implement here
 		String response;
 		//Similar to POST from HTTP because we don't update if the key exists
-		out.println("POST");
+		out.writeUTF("POST");
 		//Waiting for an ack with '-'
-		response = in.readLine();
+		response = in.readUTF();
 		if(response.equals("-"))
 		{
 			//got an ack so continue
-			out.println(key);
-			response=in.readLine();
+			out.writeUTF(key);
+			response=in.readUTF();
 			if(response.equals("="))
 			{
 				//key already exists, return 1
 				return 1;
 			}
-			out.println(Arrays.toString(data));
+			int len = data.length;
+			out.writeInt(len);
+			out.write(data);
 			return 0;
 		}
 		throw new IOException();
@@ -99,24 +100,6 @@ public class RUStoreClient {
 	}
 
 	/**
-	 * Converts a byte[] that has had Arrays.toString called on it back into
-	 * a byte[]
-	 * @param byteString
-	 * @return			the original byte[]
-	 */
-	public static byte[] convert(String byteString)
-	{
-		//remove brackets, convert to array
-		String[] str = byteString.substring(1,byteString.length()-1).split(",");
-		byte[] temp = new byte[str.length];
-		for(int i=0;i<str.length;i++)
-		{
-			temp[i] = Byte.parseByte(str[i].trim());
-		}
-		return temp;
-	}
-
-	/**
 	 * Downloads arbitrary data object associated with a given key
 	 * from the object store server.
 	 * 
@@ -130,19 +113,20 @@ public class RUStoreClient {
 		// Implement here
 		String response;
 		//send command
-		out.println("GET");
+		out.writeUTF("GET");
 		//get ACK
-		response = in.readLine();
+		response = in.readUTF();
 		if(response.equals("-"))
 		{
 			//send key wanted
-			out.println(key);
-			response = in.readLine();
+			out.writeUTF(key);
+			response = in.readUTF();
 			//if - then key exists
 			if(response.equals("-"))
 			{
-				response = in.readLine();
-				return convert(response);
+				int len = in.readInt();
+				byte[] temp = in.readNBytes(len);
+				return temp;
 			}
 			else{
 				return null;
@@ -173,15 +157,16 @@ public class RUStoreClient {
 			return 1;
 		}
 		File outputFile = new File(file_path);
-		if(outputFile.createNewFile())
+		try{
+			FileOutputStream outStream = new FileOutputStream(outputFile,false);
+			outStream.write(data);
+			outStream.close();
+			return 0;
+		}catch(FileNotFoundException e)
 		{
-			Files.write(outputFile.toPath(),data);
-			return 0;	
+			throw new IOException();
 		}
-		else{
-			System.out.println("File already exists");
-		}
-		throw new IOException();
+		
 	}
 
 	/**
@@ -200,14 +185,14 @@ public class RUStoreClient {
 		// Implement here
 		String response;
 		//Similar to POST from HTTP because we don't update if the key exists
-		out.println("REM");
+		out.writeUTF("REM");
 		//Waiting for an ack with '-'
-		response = in.readLine();
+		response = in.readUTF();
 		if(response.equals("-"))
 		{
 			//got an ack so continue
-			out.println(key);
-			response=in.readLine();
+			out.writeUTF(key);
+			response=in.readUTF();
 			if(response.equals("-"))
 			{
 				return 0;
@@ -231,16 +216,17 @@ public class RUStoreClient {
 		// Implement here
 		String response;
 		//send command
-		out.println("LIS");
+		out.writeUTF("LIS");
 		//get ACK
-		response = in.readLine();
+		response = in.readUTF();
 		if(response.equals("-"))
 		{
-			//read key list
-			response = in.readLine();
+			//key check
+			response = in.readUTF();
 			if(response.equals("-"))
 			{
-				response = in.readLine();
+				//read list
+				response = in.readUTF();
 				response = response.substring(1,response.length()-1);
 				return response.split(",");
 			}
@@ -262,7 +248,7 @@ public class RUStoreClient {
 	public void disconnect() throws IOException{
 
 		// Implement here
-		out.println("DIS");
+		out.writeUTF("DIS");
 		clientSocket.close();
 	}
 

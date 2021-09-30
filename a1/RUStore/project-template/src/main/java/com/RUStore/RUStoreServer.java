@@ -3,7 +3,6 @@ package com.RUStore;
 /* any necessary Java packages here */
 import java.io.*;
 import java.net.*;
-import java.util.Arrays;
 import java.util.HashMap;
 
 public class RUStoreServer {
@@ -11,47 +10,33 @@ public class RUStoreServer {
 	/* any necessary class members here */
 	private static ServerSocket serverSocket;
 	private static Socket clientSocket;
-	private static PrintWriter out;
-	private static BufferedReader in;
+	private static DataOutputStream out;
+	private static DataInputStream in;
 	private static HashMap<String,byte[]> storage;
 	/* any necessary helper methods here */
-
-	public static byte[] convert(String byteString)
-	{
-		//remove brackets, convert to array
-		String[] str = byteString.substring(1,byteString.length()-1).split(",");
-		byte[] temp = new byte[str.length];
-		for(int i=0;i<str.length;i++)
-		{
-			temp[i] = Byte.parseByte(str[i].trim());
-		}
-		return temp;
-	}
 
 	public static void serv_post() throws IOException
 	{
 		//ACK the request
-		out.println("-");
+		out.writeUTF("-");
 		String response, key;
 		//get key
-		response = in.readLine();
+		response = in.readUTF();
 		if(storage.containsKey(response))
 		{
 			//send = if key already exists, don't need to continue
-			out.println("=");
+			out.writeUTF("=");
 			return;
 		}
 		else
 		{	
 			//send - if key does not exist
-			out.println("-");
+			out.writeUTF("-");
 			key = response;
 			System.out.printf("Putting \"%s\"\n",key);
 		}
-		//get data
-		response=in.readLine();
-		//convert from toString to byte[]
-		byte[] temp = convert(response);
+		int len = in.readInt();
+		byte[] temp = in.readNBytes(len);
 		//place into storage
 		storage.put(key, temp);
 	}
@@ -59,19 +44,19 @@ public class RUStoreServer {
 	public static void serv_remove() throws IOException
 	{
 		//ACK the request
-		out.println("-");
+		out.writeUTF("-");
 		String response;
 		//get key
-		response=in.readLine();
+		response=in.readUTF();
 		if(storage.containsKey(response))
 		{
 			System.out.printf("removing \"%s\"\n",response);
 			storage.remove(response);
-			out.println("-");	
+			out.writeUTF("-");	
 		}
 		else{
 			//key was not found
-			out.println("!");
+			out.writeUTF("!");
 		}
 
 	}
@@ -79,23 +64,25 @@ public class RUStoreServer {
 	public static void serv_get() throws IOException
 	{
 		//ACK the request
-		out.println("-");
+		out.writeUTF("-");
 		String response, key;
 		//get key
-		response = in.readLine();
+		response = in.readUTF();
 		if(storage.containsKey(response))
 		{
 			//send -, key exists, sending data
-			out.println("-");
+			out.writeUTF("-");
 			key = response;
 			System.out.printf("getting \"%s\"\n",key);
 			byte[] result = storage.get(key);
-			out.println(Arrays.toString(result));
+			int len = result.length;
+			out.writeInt(len);
+			out.write(result);
 		}
 		else
 		{	
 			//send ! if key does not exist
-			out.println("!");
+			out.writeUTF("!");
 			return;
 		}
 	}
@@ -103,18 +90,18 @@ public class RUStoreServer {
 	public static void serv_list() throws IOException
 	{
 		//ACK the request
-		out.println("-");
+		out.writeUTF("-");
 		System.out.println("Sending list of keys");
 		if(storage.isEmpty())
 		{
 			//no keys, tell client
-			out.println("!");
+			out.writeUTF("!");
 		}
 		else
 		{
 			//there are keys, sending
-			out.println("-");
-			out.println(storage.keySet());
+			out.writeUTF("-");
+			out.writeUTF(storage.keySet().toString());
 			return;
 		}
 	}
@@ -122,7 +109,7 @@ public class RUStoreServer {
 	{
 		while(true)
 		{
-			String command = in.readLine();
+			String command = in.readUTF();
 			if(command.equals("POST"))
 			{
 				serv_post();
@@ -144,7 +131,6 @@ public class RUStoreServer {
 				System.out.println("Server: Client has disconnected.");
 				//close sockets
 				clientSocket.close();
-				serverSocket.close();
 				return;
 			}
 		}
@@ -167,15 +153,17 @@ public class RUStoreServer {
 		//create server
 		serverSocket = new ServerSocket(port);
 		System.out.printf("Server started. Listening on port %d.\n",port);
-		//accept a client
-		clientSocket = serverSocket.accept();
-		System.out.println("Connection established.");
-		out = new PrintWriter(clientSocket.getOutputStream(), true);
-		in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+		//persists storage as per discussion
 		storage = new HashMap<String, byte[]>();
-		//send to helper to resolve
-		handle_connection();
-		return;
+		while(true)
+		{
+			clientSocket = serverSocket.accept();
+			System.out.println("Connection established.");
+			out = new DataOutputStream(clientSocket.getOutputStream());
+			in = new DataInputStream(clientSocket.getInputStream());
+			//send to helper to resolve
+			handle_connection();
+		}
 	}
 
 }
