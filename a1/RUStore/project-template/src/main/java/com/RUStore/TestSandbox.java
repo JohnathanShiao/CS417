@@ -31,8 +31,8 @@ public class TestSandbox{
 
 		/* Test with a file */
 		String fileKey = "chapter1.txt";
-		String inputPath = "./inputfiles/lofi.mp3";
-		String outputPath = "./outputfiles/lofi_.mp3";
+		String inputPath = "./inputfiles/temp";
+		String outputPath = "./outputfiles/temp_";
 		for(int i=0;i<4;i++)
 		{
 			if(i==1)
