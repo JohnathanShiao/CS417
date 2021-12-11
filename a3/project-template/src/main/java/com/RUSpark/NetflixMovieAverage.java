@@ -41,7 +41,7 @@ public class NetflixMovieAverage {
       df.setRoundingMode(RoundingMode.FLOOR);
       for(Tuple2<?,?> tuple: output)
       {
-        if((double)tuple._2() > 4.5)
+        // if((double)tuple._2() > 4.5)
           System.out.println(tuple._1() + " " + df.format(tuple._2()));
       }
       spark.close();

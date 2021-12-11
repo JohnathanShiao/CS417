@@ -33,13 +33,17 @@ public class RedditPhotoImpact {
     JavaPairRDD<Integer, Integer> counts = pairs.reduceByKey((i1,i2)->i1+i2).sortByKey();
     List<Tuple2<Integer,Integer>> output = counts.collect();
     int max = 0;
+    int id = 0;
     for(Tuple2<?,?> tuple: output)
     {
       System.out.println(tuple._1() + " " + tuple._2());
-      if((int)tuple._2()>max)
-        max= (int)tuple._1();
+      // if((int)tuple._2()>max)
+      // {
+      //   id= (int)tuple._1();
+      //   max =(int)tuple._2();
+      // }
     }
-    System.out.println("THIS IS THE MAX " + max);
+    // System.out.println("THIS IS THE MAX " + id + "\nTHIS IS THE COUNT " + max);
     spark.close();
 	}
 
